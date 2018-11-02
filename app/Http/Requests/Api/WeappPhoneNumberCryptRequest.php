@@ -27,6 +27,7 @@ class WeappPhoneNumberCryptRequest extends FormRequest
             'code' => 'required|string',
             'iv' => 'required|string',
             'encryptedData' => 'required|string',
+            'name' => 'required|string',
         ];
     }
 }
