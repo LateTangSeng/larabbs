@@ -46,6 +46,10 @@ $api->version('v1', [
         $api->delete('authorizations/current', 'AuthorizationsController@destroy')
             ->name('api.authorizations.destroy');
 
+        // 获取手机号码
+        $api->post('weapp/phonedecode', 'PhoneNumberCryptController@weappPhoneDecode')
+            ->name('api.weapp.phonenumbercrypt.phonedecode');
+
 
     });
 });

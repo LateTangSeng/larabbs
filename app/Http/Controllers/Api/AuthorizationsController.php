@@ -50,7 +50,6 @@ class AuthorizationsController extends Controller
                 if (!$user) {
                     $user = User::create([
                         'name' => $oauthUser->getNickname(),
-                        'avatar' => $oauthUser->getAvatar(),
                         'weixin_openid' => $oauthUser->getId(),
                         'weixin_unionid' => $unionid,
                     ]);
@@ -109,8 +108,20 @@ class AuthorizationsController extends Controller
             //$attributes['weixin_openid'] = $data['openid'];
 
             // 插入数据 返回插入数据的bool值
-             $insert_bool = User::insert(['name'=>'null','weixin_openid'=>$openid,'weixin_session_key'=>$weixin_session_key]);
-             var_dump($insert_bool);
+             $insert_bool = User::insert(['name'=>'null','weixin_openid'=>$openid,'weixin_session_key'=>$weixin_session_key,'first_log_at'=>now(),'last_log_at'=>now(),'created_at'=>now(),'updated_at'=>now()]);
+             if($insert_bool)
+             {
+                // 找到 openid 对应的用户
+                $user = User::where('weixin_openid', $data['openid'])->first();
+             }
+        }
+        else
+        {
+            $update_bool = User::where('weixin_openid', $data['openid'])->update(['weixin_session_key'=>$weixin_session_key,'last_log_at'=>now()]);
+            if ($update_bool) {
+                // 找到 openid 对应的用户
+                $user = User::where('weixin_openid', $data['openid'])->first();
+            }
         }
 
         // 更新用户数据
@@ -122,6 +133,7 @@ class AuthorizationsController extends Controller
 
         return $this->respondWithToken($token)->setStatusCode(201);
         //return $openid;
+        //return $data;
 
 
         //return $this->response->array([
