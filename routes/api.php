@@ -50,6 +50,9 @@ $api->version('v1', [
         $api->post('weapp/phonedecode', 'PhoneNumberCryptController@weappPhoneDecode')
             ->name('api.weapp.phonenumbercrypt.phonedecode');
 
+        // 获取简易基金信息
+        $api->post('weapp/fundbriefinfo', 'WeappGetFundBriefInfoController@GetFundInfo')
+            ->name('api.weapp.getfundinfo.getfundinfo');
 
     });
 });
