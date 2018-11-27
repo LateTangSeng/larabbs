@@ -82,6 +82,8 @@ class AuthorizationsController extends Controller
     public function weappStore(WeappAuthorizationRequest $request)
     {
         $code = $request->code;
+        $name = $request->name;
+        $gender = $request->gender;
 
         // 根据 code 获取微信 openid 和 session_key
         $miniProgram = \EasyWeChat::miniProgram();
@@ -108,7 +110,7 @@ class AuthorizationsController extends Controller
             //$attributes['weixin_openid'] = $data['openid'];
 
             // 插入数据 返回插入数据的bool值
-             $insert_bool = User::insert(['name'=>'null','weixin_openid'=>$openid,'weixin_session_key'=>$weixin_session_key,'first_log_at'=>now(),'last_log_at'=>now(),'created_at'=>now(),'updated_at'=>now()]);
+             $insert_bool = User::insert(['name'=>$request->name,'gender'=>$request->gender,'weixin_openid'=>$openid,'weixin_session_key'=>$weixin_session_key,'first_log_at'=>now(),'last_log_at'=>now(),'created_at'=>now(),'updated_at'=>now()]);
              if($insert_bool)
              {
                 // 找到 openid 对应的用户
@@ -117,7 +119,7 @@ class AuthorizationsController extends Controller
         }
         else
         {
-            $update_bool = User::where('weixin_openid', $data['openid'])->update(['weixin_session_key'=>$weixin_session_key,'last_log_at'=>now()]);
+            $update_bool = User::where('weixin_openid', $data['openid'])->update(['weixin_session_key'=>$weixin_session_key,'last_log_at'=>now(),'name'=>$request->name,'gender'=>$request->gender]);
             if ($update_bool) {
                 // 找到 openid 对应的用户
                 $user = User::where('weixin_openid', $data['openid'])->first();
@@ -131,7 +133,7 @@ class AuthorizationsController extends Controller
         $token = Auth::guard('api')->fromUser($user);
         //$openid = $data['openid'];
 
-        return $this->respondWithToken($token)->setStatusCode(201);
+        return $this->respondWithToken($token, $openid)->setStatusCode(201);
         //return $openid;
         //return $data;
 
@@ -155,10 +157,11 @@ class AuthorizationsController extends Controller
         return $this->response->noContent();
     }
 
-    protected function respondWithToken($token)
+    protected function respondWithToken($token, $openid)
     {
         return $this->response->array([
             'access_token' => $token,
+            'openid' => $openid,
             'token_type' => 'Bearer',
             'expires_in' => \Auth::guard('api')->factory()->getTTL() * 60
         ]);
