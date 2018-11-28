@@ -13,19 +13,11 @@ class WeappFundSavingController extends Controller
     public function FundSaving(WeappFundSavingRequest $request)
     {
         $ResultArray = array("state" => 'false', "openid"=> '', "salary"=> '', "saving"=> '', "basemoney"=> '');
-        $code = $request->code;
+        $openid = $request->openid;
 
-        // 根据 code 获取微信 openid 和 session_key
-        $miniProgram = \EasyWeChat::miniProgram();
-        $data = $miniProgram->auth->session($code);
-
-        // 如果结果错误，说明 code 已过期或不正确，返回 401 错误
-        if (isset($data['errcode'])) {
-            return $ResultArray;
-        }
 
         // 找到 openid 对应的用户
-        $user = FundSetting::where('weixinopenid', $data['openid'])->first();
+        $user = FundSetting::where('weixinopenid', $openid)->first();
 
         // 未找到对应用户则需要提交用户名密码进行用户绑定
         if (!$user) {

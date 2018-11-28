@@ -81,5 +81,9 @@ $api->version('v1', [
         // 获取定投计划表
         $api->post('weapp/projecttable', 'WeappProjectTableController@ProjectTable')
             ->name('api.weapp.projecttable.projecttable');
+
+        // 更新定投计划表
+        $api->post('weapp/projectupdate', 'WeappProjectUpdateController@ProjectUpdate')
+            ->name('api.weapp.projectupdate.projectupdate');
     });
 });

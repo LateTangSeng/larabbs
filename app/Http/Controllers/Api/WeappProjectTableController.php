@@ -13,10 +13,10 @@ class WeappProjectTableController extends Controller
 //
     public function ProjectTable(WeappProjectTableRequest $request)
     {
-        $ResultArray = array("projectnum" => '',
-            "fundnonename" => '',"fundonecode" => '', "fundonebase" => '',
-            "fundntwoname" => '',"fundtwocode" => '', "fundtwobase" => '',
-            "fundnthreename" => '',"fundthreecode" => '', "fundthreebase" => '',
+        $ResultArray = array("projectnum" => '0',
+            "fundonename" => '',"fundonecode" => '', "fundonebase" => '',
+            "fundtwoname" => '',"fundtwocode" => '', "fundtwobase" => '',
+            "fundthreename" => '',"fundthreecode" => '', "fundthreebase" => '',
             "baseone" => '', "basetwo" => '', "basethree" => '',
             "state" => 'false');
 
@@ -37,22 +37,22 @@ class WeappProjectTableController extends Controller
             $ResultArray['projectnum'] = $count;
             $ResultArray['state'] = 'true';
 
-            $ResultArray['fundnonename'] = $ProjectTableArray[0]->fundname;
-            $ResultArray['fundnonecode'] = $ProjectTableArray[0]->fundcode;
-            $ResultArray['fundnonebase'] = $ProjectTableArray[0]->basemoney;
+            $ResultArray['fundonename'] = $ProjectTableArray[0]->fundname;
+            $ResultArray['fundonecode'] = $ProjectTableArray[0]->fundcode;
+            $ResultArray['fundonebase'] = $ProjectTableArray[0]->basemoney;
             $ResultArray['baseone'] = $ProjectTableArray[0]->baseindex;
 
             if ($count >=2) {
-                $ResultArray['fundntwoname'] = $ProjectTableArray[1]->fundname;
-                $ResultArray['fundntwocode'] = $ProjectTableArray[1]->fundcode;
-                $ResultArray['fundntwobase'] = $ProjectTableArray[1]->basemoney;
+                $ResultArray['fundtwoname'] = $ProjectTableArray[1]->fundname;
+                $ResultArray['fundtwocode'] = $ProjectTableArray[1]->fundcode;
+                $ResultArray['fundtwobase'] = $ProjectTableArray[1]->basemoney;
                 $ResultArray['basetwo'] = $ProjectTableArray[1]->baseindex;
             }
 
             if ($count >=3) {
-                $ResultArray['fundnthreename'] = $ProjectTableArray[2]->fundname;
-                $ResultArray['fundnthreecode'] = $ProjectTableArray[2]->fundcode;
-                $ResultArray['fundnthreebase'] = $ProjectTableArray[2]->basemoney;
+                $ResultArray['fundthreename'] = $ProjectTableArray[2]->fundname;
+                $ResultArray['fundthreecode'] = $ProjectTableArray[2]->fundcode;
+                $ResultArray['fundthreebase'] = $ProjectTableArray[2]->basemoney;
                 $ResultArray['basethree'] = $ProjectTableArray[2]->baseindex;
             }
 

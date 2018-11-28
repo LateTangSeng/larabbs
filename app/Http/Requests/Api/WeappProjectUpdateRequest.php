@@ -4,7 +4,7 @@ namespace App\Http\Requests\Api;
 
 use Dingo\Api\Http\FormRequest;
 
-class WeappFundSavingRequest extends FormRequest
+class WeappProjectUpdateRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -24,7 +24,10 @@ class WeappFundSavingRequest extends FormRequest
     public function rules()
     {
         return [
-            'openid' => 'required|string',
+        'openid' => 'required|string',
+        'fundcode' => 'required|string',
+        'baseindex' => 'required|string',
+        'basemoney' => 'required|string',
         ];
     }
 }
