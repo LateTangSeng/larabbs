@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests\Api;
 
-use Illuminate\Foundation\Http\FormRequest;
+use Dingo\Api\Http\FormRequest;
 
 class WeappProjectDeletionRequest extends FormRequest
 {
@@ -13,7 +13,7 @@ class WeappProjectDeletionRequest extends FormRequest
      */
     public function authorize()
     {
-        return false;
+        return true;
     }
 
     /**
@@ -24,7 +24,8 @@ class WeappProjectDeletionRequest extends FormRequest
     public function rules()
     {
         return [
-            //
+        'openid' => 'required|string',
+        'fundcode' => 'required|string',
         ];
     }
 }

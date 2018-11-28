@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests\Api;
 
-use Illuminate\Foundation\Http\FormRequest;
+use Dingo\Api\Http\FormRequest;
 
 class WeappFundSavingRequest extends FormRequest
 {
@@ -13,7 +13,7 @@ class WeappFundSavingRequest extends FormRequest
      */
     public function authorize()
     {
-        return false;
+        return true;
     }
 
     /**
@@ -24,7 +24,7 @@ class WeappFundSavingRequest extends FormRequest
     public function rules()
     {
         return [
-            //
+            'code' => 'required|string',
         ];
     }
 }

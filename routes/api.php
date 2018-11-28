@@ -54,5 +54,32 @@ $api->version('v1', [
         $api->post('weapp/fundbriefinfo', 'WeappGetFundBriefInfoController@GetFundInfo')
             ->name('api.weapp.getfundinfo.getfundinfo');
 
+        // 获取大盘指数
+        $api->post('weapp/stockindex', 'WeappStockIndexController@StockIndex')
+            ->name('api.weapp.stockindex.stockindex');
+
+        // 建立或更新基金设定表
+        $api->post('weapp/fundsetting', 'WeappFundSettingController@FundSetting')
+            ->name('api.weapp.fundsetting.fundsetting');
+
+        // 获取基金设定表
+        $api->post('weapp/fundsaving', 'WeappFundSavingController@FundSaving')
+            ->name('api.weapp.fundsaving.fundsaving');
+
+        // 检查基金号
+        $api->post('weapp/fundcodecheck', 'WeappFundCodeCheckController@FundCodeCheck')
+            ->name('api.weapp.fundcodecheck.fundcodecheck');
+
+        // 建立定投计划表
+        $api->post('weapp/projectcreation', 'WeappProjectCreationController@ProjectCreation')
+            ->name('api.weapp.projectcreation.projectcreation');
+
+        // 删除定投计划表
+        $api->post('weapp/projectdeletion', 'WeappProjectDeletionController@ProjectDeletion')
+            ->name('api.weapp.projectdeletion.projectdeletion');
+
+        // 获取定投计划表
+        $api->post('weapp/projecttable', 'WeappProjectTableController@ProjectTable')
+            ->name('api.weapp.projecttable.projecttable');
     });
 });
