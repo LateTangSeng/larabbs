@@ -16,9 +16,10 @@ class WeappProjectDeletionController extends Controller
         $ResultArray = array("fundname" => '',"fundcode" => '',"fundchangerate" => '',"fundnetvalue" => '',"fundtype" => '',"fundrisklevel" => '',"fundvalueday" => '',"state" => 'false',"color" => 'true');
         $openid = $request->openid;
         $fundcode = $request->fundcode;
+        $baseindexold = $request->baseindexold;
 
         // 找到 code 对应的基金
-        $FundProject = FundProject::where(['fundcode'=>$fundcode, 'weixinopenid'=>$openid])->first();
+        $FundProject = FundProject::where(['fundcode'=>$fundcode, 'weixinopenid'=>$openid, 'baseindex'=>$baseindexold])->first();
 
         if (!$FundProject) {
             return $ResultArray;
@@ -26,7 +27,7 @@ class WeappProjectDeletionController extends Controller
         else
         {
             // 插入数据 返回插入数据的bool值
-            $delete_bool = FundProject::where(['weixinopenid'=>$openid,'fundcode'=>$fundcode])->delete();
+            $delete_bool = FundProject::where(['weixinopenid'=>$openid,'fundcode'=>$fundcode, 'baseindex'=>$baseindexold])->delete();
             if($delete_bool)
             {
                 // 插入成功

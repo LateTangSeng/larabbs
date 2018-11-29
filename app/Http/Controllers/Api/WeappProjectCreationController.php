@@ -30,7 +30,7 @@ class WeappProjectCreationController extends Controller
         else
         {
             // 查询是否已经建立该基金的定投计划
-            $FundProject = FundProject::where(['fundcode'=>$fundcode, 'weixinopenid'=>$openid])->first();
+            $FundProject = FundProject::where(['fundcode'=>$fundcode, 'weixinopenid'=>$openid, 'baseindex'=>$baseindex])->first();
 
             // 找不到对应的基金
             if (!$FundProject)

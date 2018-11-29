@@ -27,6 +27,7 @@ class WeappProjectUpdateRequest extends FormRequest
         'openid' => 'required|string',
         'fundcode' => 'required|string',
         'baseindex' => 'required|string',
+        'baseindexold' => 'required|string',
         'basemoney' => 'required|string',
         ];
     }

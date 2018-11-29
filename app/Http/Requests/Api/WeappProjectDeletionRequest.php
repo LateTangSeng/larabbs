@@ -26,6 +26,7 @@ class WeappProjectDeletionRequest extends FormRequest
         return [
         'openid' => 'required|string',
         'fundcode' => 'required|string',
+        'baseindexold' => 'required|string',
         ];
     }
 }
