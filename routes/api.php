@@ -85,5 +85,9 @@ $api->version('v1', [
         // 更新定投计划表
         $api->post('weapp/projectupdate', 'WeappProjectUpdateController@ProjectUpdate')
             ->name('api.weapp.projectupdate.projectupdate');
+
+        // 查询房价
+        $api->post('weapp/realestatequery', 'WeappRealEstateQueryController@RealEstateQuery')
+            ->name('api.weapp.realestatequery.realestatequery');
     });
 });
