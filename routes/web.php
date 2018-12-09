@@ -30,3 +30,5 @@ Route::resource('notifications', 'NotificationsController', ['only' => ['index']
 Route::get('permission-denied', 'PagesController@permissionDenied')->name('permission-denied');
 
 Route::any('/weixinofficial', 'WeixinOfficialController@show');
+
+//Route::post('carprice', 'CarPriceController@CarPrice');

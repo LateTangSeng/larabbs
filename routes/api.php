@@ -89,5 +89,9 @@ $api->version('v1', [
         // 查询房价
         $api->post('weapp/realestatequery', 'WeappRealEstateQueryController@RealEstateQuery')
             ->name('api.weapp.realestatequery.realestatequery');
+
+        // 查询车价测试
+        $api->post('weapp/carprice', 'CarPriceController@CarPrice')
+            ->name('api.weapp.carprice.carprice');
     });
 });
