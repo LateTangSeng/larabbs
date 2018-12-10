@@ -56,7 +56,7 @@ class WeixinOfficialController extends Controller
         $app->server->push(function ($message) {
             switch ($message['MsgType']) {
                 case 'event':
-                    return $this->EventProc($message['Event']);
+                    return $this->EventProc($message);
                     break;
                 case 'text':
                     if ('定投' == $message['Content'])
@@ -78,7 +78,7 @@ class WeixinOfficialController extends Controller
                         }
                         else
                         {
-                            return '为了确保公众号能够正常运行，请您确保输入间隔5秒以上，谢谢您的支持与理解';
+                            return '为了确保公众号能够正常运行，请您确保输入间隔5-10秒以上，谢谢您的支持与理解';
                         }
                     }
                     else if ('小程序' == $message['Content'])
@@ -90,7 +90,7 @@ class WeixinOfficialController extends Controller
                         }
                         else
                         {
-                            return '为了确保公众号能够正常运行，请您确保输入间隔5秒以上，谢谢您的支持与理解';
+                            return '为了确保公众号能够正常运行，请您确保输入间隔5-10秒以上，谢谢您的支持与理解';
                         }
                     }
                     else
@@ -103,7 +103,7 @@ class WeixinOfficialController extends Controller
                     }
                     else
                     {
-                        return '为了确保公众号能够正常运行，请您确保输入间隔5秒以上，谢谢您的支持与理解';
+                        return '为了确保公众号能够正常运行，请您确保输入间隔5-10秒以上，谢谢您的支持与理解';
                     }
                     break;
                 case 'voice':
@@ -113,7 +113,7 @@ class WeixinOfficialController extends Controller
                     }
                     else
                     {
-                        return '为了确保公众号能够正常运行，请您确保输入间隔5秒以上，谢谢您的支持与理解';
+                        return '为了确保公众号能够正常运行，请您确保输入间隔5-10秒以上，谢谢您的支持与理解';
                     }
                     break;
                 case 'video':
@@ -123,7 +123,7 @@ class WeixinOfficialController extends Controller
                     }
                     else
                     {
-                        return '为了确保公众号能够正常运行，请您确保输入间隔5秒以上，谢谢您的支持与理解';
+                        return '为了确保公众号能够正常运行，请您确保输入间隔5-10秒以上，谢谢您的支持与理解';
                     }
                     break;
                 case 'location':
@@ -133,7 +133,7 @@ class WeixinOfficialController extends Controller
                     }
                     else
                     {
-                        return '为了确保公众号能够正常运行，请您确保输入间隔5秒以上，谢谢您的支持与理解';
+                        return '为了确保公众号能够正常运行，请您确保输入间隔5-10秒以上，谢谢您的支持与理解';
                     }
                     break;
                 case 'link':
@@ -143,7 +143,7 @@ class WeixinOfficialController extends Controller
                     }
                     else
                     {
-                        return '为了确保公众号能够正常运行，请您确保输入间隔5秒以上，谢谢您的支持与理解';
+                        return '为了确保公众号能够正常运行，请您确保输入间隔5-10秒以上，谢谢您的支持与理解';
                     }
                     break;
                 case 'file':
@@ -153,7 +153,7 @@ class WeixinOfficialController extends Controller
                     }
                     else
                     {
-                        return '为了确保公众号能够正常运行，请您确保输入间隔5秒以上，谢谢您的支持与理解';
+                        return '为了确保公众号能够正常运行，请您确保输入间隔5-10秒以上，谢谢您的支持与理解';
                     }
                     break;
                 default:
@@ -163,7 +163,7 @@ class WeixinOfficialController extends Controller
                     }
                     else
                     {
-                        return '为了确保公众号能够正常运行，请您确保输入间隔5秒以上，谢谢您的支持与理解';
+                        return '为了确保公众号能够正常运行，请您确保输入间隔5-10秒以上，谢谢您的支持与理解';
                     }
                     break;
             }
@@ -195,7 +195,8 @@ class WeixinOfficialController extends Controller
                 'OtherTypeCount' => 0,
                 'LastMsgType' => $message['MsgType'],
                 'LimitCount' => 0,
-                'UpdateTime' => $message['CreateTime']
+                'UpdateTime' => $message['CreateTime'],
+                'olduser' => 0
             ]);
 
             if($insert_bool)
@@ -207,6 +208,12 @@ class WeixinOfficialController extends Controller
         {
             $update_bool = false;
             $intervalimit = 5;
+
+            if (1 == $OfficialAccountUser->olduser)
+            {
+                $intervalimit = 10;
+            }
+
             $interval = $message['CreateTime'] - $OfficialAccountUser->UpdateTime;
             $secs = $interval;
 
@@ -304,19 +311,33 @@ class WeixinOfficialController extends Controller
         if ($this->FreqLimit('房价', $message))
         {
             $AveragePrice = '抱歉，后台数据库升级中，暂时没有您所查询的小区信息，请尝试其他输入';
-            if (false == strpos($message['Content'], '+'))
+
+            $CharArray = "+- ,/_";
+            $CharIndex = 0;
+            $IsFind = false;
+
+            for ($i=0; $i < 6; $i++)
             {
-                $city = str_before($message['Content'], ' ');
+                $CharTemp = substr($CharArray, $i, 1);
+                if (false != strpos($message['Content'], $CharTemp))
+                {
+                    $CharIndex = $i;
+                    $IsFind = true;
+                    break;
+                }
+            }
+
+            if ($IsFind)
+            {
+                $city = str_before($message['Content'], substr($CharArray, $CharIndex, 1));
                 $city = trim($city);
-                $community = str_after($message['Content'], ' ');
+                $community = str_after($message['Content'], substr($CharArray, $CharIndex, 1));
                 $community = trim($community);
             }
             else
             {
-                $city = str_before($message['Content'], '+');
-                $city = trim($city);
-                $community = str_after($message['Content'], '+');
-                $community = trim($community);
+                $AveragePrice = '抱歉，您的输入有误，请确保城市名和小区名之间有 "+-/_," 中间的任一一种英文符号(请不要使用中文符号)；或者在中间添加空格，感谢您的理解和支持';
+                return $AveragePrice;
             }
 
             $citypinyin = $this->CheckPinYin($city);
@@ -347,9 +368,26 @@ class WeixinOfficialController extends Controller
 
                 $data = str_before(str_after($result, '<strong>'), '</strong>');
                 $actualcommunity = str_before(str_after(str_after($result, '<!--小区列表start-->'), 'alt="'), '"');
+
+                $housecount = str_before(str_after(str_after($result, 'bot-tag'), '>('), ')</a>');
+
+                $buildyear = trim('竣工日期'.str_before(str_after($result, '竣工日期'), '<!-- '));
+
+                $houseaddressori = trim(str_before(str_after($result, '<address>'), '</address>'));
+                $houseaddress = '';
+
+                if (false == strpos($houseaddressori, '-'))
+                {
+                    $houseaddress = $houseaddressori;
+                }
+                else
+                {
+                    $houseaddress = str_before($houseaddressori, '-').'］'.str_after($houseaddressori, '］');
+                }
+
                 if (strlen($data) < 10)
                 {
-                    $AveragePrice = $city.' '.$actualcommunity.' 当前均价为：'.$data.' 元/平方米';
+                    $AveragePrice = $city.' '.$actualcommunity.'; 地理位置:'.$houseaddress.'； 当前均价为：'.$data.' 元/平方米；现有房源：'.$housecount.' 套；'.$buildyear;
                     //file_put_contents(__DIR__.'/db.txt', json_encode($data));
                 }
                 else
@@ -409,17 +447,28 @@ class WeixinOfficialController extends Controller
         }
     }
 
-    public function EventProc($Event)
+    public function EventProc($message)
     {
         $ResultArray = array("AveragePrice" => '',"City"=> '', "Community"=>'', "state" => 'false');
 
-        if ($Event == 'subscribe')
+        if ($message['Event'] == 'subscribe')
         {
             $ResultArray['AveragePrice'] = '您好，感谢您的关注！独行侠长期关注股票，基金，楼市等各类财经热点，关注独行侠，让投资理财变的如此简单。
             想知道你家现在的房价吗？最近有买房卖房的打算吗？后台回复城市名 小区名，如：南京 白云园，赶紧试一下吧！
             商务合作交流请加个人微信：yxp19891026';
             $ResultArray['state'] = 'true';
             //file_put_contents(__DIR__.'/db.txt', json_encode($data));
+        }
+
+        elseif ($message['Event'] == 'unsubscribe')
+        {
+            $OfficialAccountUser = UserLimit::where('OpenID', $message['FromUserName'])->first();
+
+            if ($OfficialAccountUser)
+            {
+                // 插入数据 返回插入数据的bool值
+                 $update_bool = UserLimit::where('OpenID', $message['FromUserName'])->update(['olduser'=>1,'LastMsgType'=>$message['MsgType'], 'UpdateTime'=>$message['CreateTime']]);
+            }
         }
 
         return $ResultArray['AveragePrice'];

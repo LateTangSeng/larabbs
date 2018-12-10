@@ -36,6 +36,6 @@ class UserLimit extends Model
      * @var array
      */
     protected $fillable = [
-        'id', 'CreateTime', 'OpenID','RealEstateCount', 'CarPriceCount','KeyWordsCount','MiniProgramCount','OtherTypeCpunt','LastMsgType', 'LimitCount', 'UpdateTime',
+        'id', 'CreateTime', 'OpenID','RealEstateCount', 'CarPriceCount','KeyWordsCount','MiniProgramCount','OtherTypeCpunt','LastMsgType', 'LimitCount', 'UpdateTime', 'olduser',
     ];
 }

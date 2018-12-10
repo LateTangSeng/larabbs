@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Models\Cars;
+use App\Models\UserLimit;
 use EasyWeChat\Factory;
 use EasyWeChat\Kernel\Messages\Image;
 use EasyWeChat\Kernel\Messages\News;
@@ -55,59 +56,115 @@ class WeixinOfficialController extends Controller
         $app->server->push(function ($message) {
             switch ($message['MsgType']) {
                 case 'event':
-                    return $this->EventProc($message['Event']);
+                    return $this->EventProc($message);
                     break;
                 case 'text':
                     if ('定投' == $message['Content'])
                     {
-                        $items = [
-                            new NewsItem([
-                                'title'       => '无敌定投专栏',
-                                'description' => '',
-                                'url'         => "http://mp.weixin.qq.com/s?__biz=MzUxNDk1MzQyNA==&mid=100000292&idx=1&sn=a9d3ea613006910e2bf7e901b8ce005c&chksm=79bf5b9b4ec8d28d5c2c8da65fed625d617a89fc776b330cf22b298e9ba966b6402e3a3b2b00&scene=18#wechat_redirect/",
-                                'image'       => 'https://mmbiz.qpic.cn/mmbiz_jpg/p6sEJEar2ruCGBgpAiafF7PxUq7qNzN07YN4F1pqQ3lLXPSTiaQDbHmY9Zo5tComFsZlBGicdTNbrEibFnhK5UIPfQ/0?wx_fmt=jpeg',
-                                // ...
-                            ]),
-                        ];
+                        if ($this->FreqLimit('定投', $message))
+                        {
+                            $items = [
+                                new NewsItem([
+                                    'title'       => '无敌定投专栏',
+                                    'description' => '',
+                                    'url'         => "http://mp.weixin.qq.com/s?__biz=MzUxNDk1MzQyNA==&mid=100000292&idx=1&sn=a9d3ea613006910e2bf7e901b8ce005c&chksm=79bf5b9b4ec8d28d5c2c8da65fed625d617a89fc776b330cf22b298e9ba966b6402e3a3b2b00&scene=18#wechat_redirect/",
+                                    'image'       => 'https://mmbiz.qpic.cn/mmbiz_jpg/p6sEJEar2ruCGBgpAiafF7PxUq7qNzN07YN4F1pqQ3lLXPSTiaQDbHmY9Zo5tComFsZlBGicdTNbrEibFnhK5UIPfQ/0?wx_fmt=jpeg',
+                                    // ...
+                                ]),
+                            ];
 
-                        $news = new News($items);
-
-                        $mediaId = 's_Q-2NgdVGy5Njd7N-zBEtMsXSOt0pE09xw1DfwBNIs';
-                        $Image =  new Image($mediaId);
-
-                        $NewsArray = [
-                            $news,
-                            $Image,
-                        ];
-
-                        return $news;
+                            $news = new News($items);
+                            return $news;
+                        }
+                        else
+                        {
+                            return '为了确保公众号能够正常运行，请您确保输入间隔5秒以上，谢谢您的支持与理解';
+                        }
                     }
-                    else if ('小程序' == $message['Content']) {
-                        $mediaId = 's_Q-2NgdVGy5Njd7N-zBEtMsXSOt0pE09xw1DfwBNIs';
-                        return new Image($mediaId);
-                    } else
-                        return $this->ContentProc($message['Content']);
+                    else if ('小程序' == $message['Content'])
+                    {
+                        if ($this->FreqLimit('小程序', $message))
+                        {
+                            $mediaId = 's_Q-2NgdVGy5Njd7N-zBEtMsXSOt0pE09xw1DfwBNIs';
+                            return new Image($mediaId);
+                        }
+                        else
+                        {
+                            return '为了确保公众号能够正常运行，请您确保输入间隔5秒以上，谢谢您的支持与理解';
+                        }
+                    }
+                    else
+                        return $this->ContentProc($message);
                     break;
                 case 'image':
-                    return '收到图片消息,独行侠会尽快联系您的,请稍等';
+                    if ($this->FreqLimit('image', $message))
+                    {
+                        return '收到图片消息,独行侠会尽快联系您的,请稍等';
+                    }
+                    else
+                    {
+                        return '为了确保公众号能够正常运行，请您确保输入间隔5秒以上，谢谢您的支持与理解';
+                    }
                     break;
                 case 'voice':
-                    return '收到语音消息,独行侠会尽快联系您的,请稍等';
+                    if ($this->FreqLimit('voice', $message))
+                    {
+                        return '收到语音消息,独行侠会尽快联系您的,请稍等';
+                    }
+                    else
+                    {
+                        return '为了确保公众号能够正常运行，请您确保输入间隔5秒以上，谢谢您的支持与理解';
+                    }
                     break;
                 case 'video':
-                    return '收到视频消息,独行侠会尽快联系您的,请稍等';
+                    if ($this->FreqLimit('video', $message))
+                    {
+                        return '收到视频消息,独行侠会尽快联系您的,请稍等';
+                    }
+                    else
+                    {
+                        return '为了确保公众号能够正常运行，请您确保输入间隔5秒以上，谢谢您的支持与理解';
+                    }
                     break;
                 case 'location':
-                    return '收到坐标消息,独行侠会尽快联系您的,请稍等';
+                    if ($this->FreqLimit('location', $message))
+                    {
+                        return '收到位置消息,独行侠会尽快联系您的,请稍等';
+                    }
+                    else
+                    {
+                        return '为了确保公众号能够正常运行，请您确保输入间隔5秒以上，谢谢您的支持与理解';
+                    }
                     break;
                 case 'link':
-                    return '收到链接消息,独行侠会尽快联系您的,请稍等';
+                    if ($this->FreqLimit('link', $message))
+                    {
+                        return '收到链接消息,独行侠会尽快联系您的,请稍等';
+                    }
+                    else
+                    {
+                        return '为了确保公众号能够正常运行，请您确保输入间隔5秒以上，谢谢您的支持与理解';
+                    }
                     break;
                 case 'file':
-                    return '收到文件消息,独行侠会尽快联系您的,请稍等';
-                // ... 其它消息
+                    if ($this->FreqLimit('file', $message))
+                    {
+                        return '收到文件消息,独行侠会尽快联系您的,请稍等';
+                    }
+                    else
+                    {
+                        return '为了确保公众号能够正常运行，请您确保输入间隔5秒以上，谢谢您的支持与理解';
+                    }
+                    break;
                 default:
-                    return '收到其它消息,独行侠会尽快联系您的,请稍等';
+                    if ($this->FreqLimit('其他', $message))
+                    {
+                        return '收到其他消息,独行侠会尽快联系您的,请稍等';
+                    }
+                    else
+                    {
+                        return '为了确保公众号能够正常运行，请您确保输入间隔5秒以上，谢谢您的支持与理解';
+                    }
                     break;
             }
         });
@@ -118,132 +175,286 @@ class WeixinOfficialController extends Controller
         return $response;// Laravel 里请使用：return $response;
     }
 
-    public function ContentProc($citywithcommunity)
+    public function FreqLimit($TextValue, $message)
     {
-        $IsCity = $this->CheckCity($citywithcommunity);
+        $proved = false;
+        $secs = 0;
 
-        if ($IsCity)
+        $OfficialAccountUser = UserLimit::where('OpenID', $message['FromUserName'])->first();
+
+        if (!$OfficialAccountUser)
         {
-            return $this->RealEState($citywithcommunity);
-        }
-        else
-        {
-            return $this->CarPrice($citywithcommunity);
-        }
-    }
+            // 插入数据 返回插入数据的bool值
+             $insert_bool = UserLimit::insert([
+                'CreateTime' => $message['CreateTime'],
+                'OpenID' => $message['FromUserName'],
+                'RealEstateCount' => 0,
+                'CarPriceCount' => 0,
+                'KeyWordsCount' => 0,
+                'MiniProgramCount' => 0,
+                'OtherTypeCount' => 0,
+                'LastMsgType' => $message['MsgType'],
+                'LimitCount' => 0,
+                'UpdateTime' => $message['CreateTime'],
+                'olduser' => 0
+            ]);
 
-    public function RealEState($citywithcommunity)
-    {
-        $AveragePrice = '抱歉，后台数据库升级中，暂时没有您所查询的小区信息，请尝试其他输入';
-        if (false == strpos($citywithcommunity, '+'))
-        {
-            $city = str_before($citywithcommunity, ' ');
-            $city = trim($city);
-            $community = str_after($citywithcommunity, ' ');
-            $community = trim($community);
-        }
-        else
-        {
-            $city = str_before($citywithcommunity, '+');
-            $city = trim($city);
-            $community = str_after($citywithcommunity, '+');
-            $community = trim($community);
-        }
-
-        $citypinyin = $this->CheckPinYin($city);
-
-        if (strlen($citypinyin) < 2)
-        {
-            return  $AveragePrice ;
-        }
-        else
-        {
-            //目标网站
-            $pageorigin = "https://city.anjuke.com/community/?kw=communityname&from=sugg_hot";
-
-            $pagecity = str_replace('city', $citypinyin, $pageorigin);
-            $page = str_replace('communityname', $community, $pagecity);
-
-            $ch = curl_init();
-            curl_setopt($ch, CURLOPT_URL, $page);
-            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-            curl_setopt($ch, CURLOPT_AUTOREFERER, true);
-            curl_setopt($ch, CURLOPT_REFERER, $page);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            $result = curl_exec($ch);
-            curl_close($ch);
-            //return $result;
-
-            //$datatemp = $htmlcontent->getHtml();
-
-            $data = str_before(str_after($result, '<strong>'), '</strong>');
-            $actualcommunity = str_before(str_after(str_after($result, '<!--小区列表start-->'), 'alt="'), '"');
-            if (strlen($data) < 10)
+            if($insert_bool)
             {
-                $AveragePrice = $city.' '.$actualcommunity.' 当前均价为：'.$data.' 元/平方米';
-                //file_put_contents(__DIR__.'/db.txt', json_encode($data));
+                $proved = true;
+            }
+        }
+        else
+        {
+            $update_bool = false;
+            $intervalimit = 5;
+
+            if (1 == $OfficialAccountUser->olduser)
+            {
+                $intervalimit = 10;
+            }
+
+            $interval = $message['CreateTime'] - $OfficialAccountUser->UpdateTime;
+            $secs = $interval;
+
+            if ($interval <= $intervalimit)
+            {
+                $LimitCount = $OfficialAccountUser->LimitCount + 1;
+                if ($LimitCount >= 100000)
+                {
+                    $LimitCount = 0;
+                }
+
+                switch ($TextValue)
+                {
+                    case '定投':
+                        $KeyWordsCount = $OfficialAccountUser->KeyWordsCount + 1;
+                        $update_bool = UserLimit::where('OpenID', $message['FromUserName'])->update(['KeyWordsCount'=>$KeyWordsCount,'LimitCount'=>$LimitCount,'LastMsgType'=>$message['MsgType'], 'UpdateTime'=>$message['CreateTime']]);
+                        break;
+
+                    case '小程序':
+                        $MiniProgramCount = $OfficialAccountUser->MiniProgramCount + 1;
+                        $update_bool = UserLimit::where('OpenID', $message['FromUserName'])->update(['MiniProgramCount'=>$MiniProgramCount,'LimitCount'=>$LimitCount,'LastMsgType'=>$message['MsgType'], 'UpdateTime'=>$message['CreateTime']]);
+                        break;
+
+                    case '房价':
+                        $RealEstateCount = $OfficialAccountUser->RealEstateCount + 1;
+                        $update_bool = UserLimit::where('OpenID', $message['FromUserName'])->update(['RealEstateCount'=>$RealEstateCount,'LimitCount'=>$LimitCount,'LastMsgType'=>$message['MsgType'], 'UpdateTime'=>$message['CreateTime']]);
+                        break;
+
+                    case '车价':
+                        $CarPriceCount = $OfficialAccountUser->CarPriceCount + 1;
+                        $update_bool = UserLimit::where('OpenID', $message['FromUserName'])->update(['CarPriceCount'=>$CarPriceCount,'LimitCount'=>$LimitCount,'LastMsgType'=>$message['MsgType'], 'UpdateTime'=>$message['CreateTime']]);
+                        break;
+
+                    default:
+                        $OtherTypeCount = $OfficialAccountUser->OtherTypeCount + 1;
+                        $update_bool = UserLimit::where('OpenID', $message['FromUserName'])->update(['OtherTypeCount'=>$OtherTypeCount,'LimitCount'=>$LimitCount,'LastMsgType'=>$message['MsgType'], 'UpdateTime'=>(int)$message['CreateTime']]);
+                        break;
+                }
             }
             else
             {
-                return $AveragePrice;
-            }
-        }
-
-        return $AveragePrice;
-    }
-
-    public function CarPrice($carname)
-    {
-        $pricereply = '抱歉，后台数据库还在升级中，暂时没有您所查询的车系信息，请尝试其他车系。如不知道车系，可以先尝试输入车辆品牌，比如输入阿斯顿，可以获取阿斯顿·马丁旗下所有车系';
-
-        $cars = Cars::where('name', $carname)->first();
-
-        if (!$cars)
-        {
-            $count = Cars::where('name', 'like','%'.$carname.'%')->count();
-            if ($count != 0)
-            {
-                $carbrand = Cars::where('name', 'like','%'.$carname.'%')->get();
-                $pricereply = '您所查询的品牌旗下所有车系为:';
-                for($i = 0; $i < $count; $i++)
+                switch ($TextValue)
                 {
-                    $pricereply = $pricereply.$carbrand[$i]->name.';';
+                    case '定投':
+                        $KeyWordsCount = $OfficialAccountUser->KeyWordsCount + 1;
+                        $update_bool = UserLimit::where('OpenID', $message['FromUserName'])->update(['KeyWordsCount'=>(int)$KeyWordsCount,'LastMsgType'=>$message['MsgType'], 'UpdateTime'=>$message['CreateTime']]);
+                        break;
+
+                    case '小程序':
+                        $MiniProgramCount = $OfficialAccountUser->MiniProgramCount + 1;
+                        $update_bool = UserLimit::where('OpenID', $message['FromUserName'])->update(['MiniProgramCount'=>(int)$MiniProgramCount,'LastMsgType'=>$message['MsgType'], 'UpdateTime'=>$message['CreateTime']]);
+                        break;
+
+                    case '房价':
+                        $RealEstateCount = $OfficialAccountUser->RealEstateCount + 1;
+                        $update_bool = UserLimit::where('OpenID', $message['FromUserName'])->update(['RealEstateCount'=>(int)$RealEstateCount,'LastMsgType'=>$message['MsgType'], 'UpdateTime'=>$message['CreateTime']]);
+                        break;
+
+                    case '车价':
+                        $CarPriceCount = $OfficialAccountUser->CarPriceCount + 1;
+                        $update_bool = UserLimit::where('OpenID', $message['FromUserName'])->update(['CarPriceCount'=>(int)$CarPriceCount,'LastMsgType'=>$message['MsgType'], 'UpdateTime'=>$message['CreateTime']]);
+                        break;
+
+                    default:
+                        $OtherTypeCount = $OfficialAccountUser->OtherTypeCount + 1;
+                        $update_bool = UserLimit::where('OpenID', $message['FromUserName'])->update(['OtherTypeCount'=>$OtherTypeCount,'LastMsgType'=>$message['MsgType'], 'UpdateTime'=>$message['CreateTime']]);
+                        break;
                 }
 
-                $pricereply = $pricereply.' 您可以复制具体车系名称，输入至对话框查询该车系价格范围。';
+                if ($update_bool)
+                {
+                    $proved = true;
+                }
             }
+        }
+        return $proved;
+    }
+
+    public function ContentProc($message)
+    {
+        $IsCity = $this->CheckCity($message['Content']);
+
+        if ($IsCity)
+        {
+            return $this->RealEState($message);
+        }
+        else
+        {
+            return $this->CarPrice($message);
+        }
+    }
+
+    public function RealEState($message)
+    {
+        if ($this->FreqLimit('房价', $message))
+        {
+            $AveragePrice = '抱歉，后台数据库升级中，暂时没有您所查询的小区信息，请尝试其他输入';
+            if (false == strpos($message['Content'], '+'))
+            {
+                $city = str_before($message['Content'], ' ');
+                $city = trim($city);
+                $community = str_after($message['Content'], ' ');
+                $community = trim($community);
+            }
+            else
+            {
+                $city = str_before($message['Content'], '+');
+                $city = trim($city);
+                $community = str_after($message['Content'], '+');
+                $community = trim($community);
+            }
+
+            $citypinyin = $this->CheckPinYin($city);
+
+            if (strlen($citypinyin) < 2)
+            {
+                return  $AveragePrice ;
+            }
+            else
+            {
+                //目标网站
+                $pageorigin = "https://city.anjuke.com/community/?kw=communityname&from=sugg_hot";
+
+                $pagecity = str_replace('city', $citypinyin, $pageorigin);
+                $page = str_replace('communityname', $community, $pagecity);
+
+                $ch = curl_init();
+                curl_setopt($ch, CURLOPT_URL, $page);
+                curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+                curl_setopt($ch, CURLOPT_AUTOREFERER, true);
+                curl_setopt($ch, CURLOPT_REFERER, $page);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                $result = curl_exec($ch);
+                curl_close($ch);
+                //return $result;
+
+                //$datatemp = $htmlcontent->getHtml();
+
+                $data = str_before(str_after($result, '<strong>'), '</strong>');
+                $actualcommunity = str_before(str_after(str_after($result, '<!--小区列表start-->'), 'alt="'), '"');
+
+                $housecount = str_before(str_after(str_after($result, 'bot-tag'), '>('), ')</a>');
+
+                $buildyear = trim('竣工日期'.str_before(str_after($result, '竣工日期'), '<!-- '));
+
+                $houseaddressori = trim(str_before(str_after($result, '<address>'), '</address>'));
+                $houseaddress = '';
+
+                if (false == strpos($houseaddressori, '-'))
+                {
+                    $houseaddress = $houseaddressori;
+                }
+                else
+                {
+                    $houseaddress = str_before($houseaddressori, '-').'］'.str_after($houseaddressori, '］');
+                }
+
+                if (strlen($data) < 10)
+                {
+                    $AveragePrice = $city.' '.$actualcommunity.'; 地理位置:'.$houseaddress.'； 当前均价为：'.$data.' 元/平方米；现有房源：'.$housecount.' 套；'.$buildyear;
+                    //file_put_contents(__DIR__.'/db.txt', json_encode($data));
+                }
+                else
+                {
+                    return $AveragePrice;
+                }
+            }
+
+            return $AveragePrice;
+        }
+        else
+        {
+            return '为了确保公众号能够正常运行，请您确保输入间隔5秒以上，谢谢您的支持与理解';
+        }
+    }
+
+    public function CarPrice($message)
+    {
+        if ($this->FreqLimit('车价', $message))
+        {
+            $pricereply = '抱歉，后台数据库还在升级中，暂时没有您所查询的车系信息，请尝试其他车系。如不知道车系，可以先尝试输入车辆品牌，比如输入阿斯顿，可以获取阿斯顿·马丁旗下所有车系';
+
+            $cars = Cars::where('name', $message['Content'])->first();
+
+            if (!$cars)
+            {
+                $count = Cars::where('name', 'like','%'.$message['Content'].'%')->count();
+                if ($count != 0)
+                {
+                    $carbrand = Cars::where('name', 'like','%'.$message['Content'].'%')->get();
+                    $pricereply = '您所查询的品牌旗下所有车系为:';
+                    for($i = 0; $i < $count; $i++)
+                    {
+                        $pricereply = $pricereply.$carbrand[$i]->name.';';
+                    }
+
+                    $pricereply = $pricereply.' 您可以复制具体车系名称，输入至对话框查询该车系价格范围。';
+                }
+                return $pricereply;
+            }
+            else
+            {
+                if (0 == $cars->minprice) {
+                    return '抱歉，您所查询的车系暂时没有报价，请尝试其他车系。';
+                }
+                else
+                {
+                    $pricereply = $message['Content'].' 厂家指导价为:'.$cars->minprice.' 至 '.$cars->maxprice.'元';
+                }
+            }
+
             return $pricereply;
         }
         else
         {
-            if (0 == $cars->minprice) {
-                return '抱歉，您所查询的车系暂时没有报价，请尝试其他车系。';
-            }
-            else
-            {
-                $pricereply = $carname.' 厂家指导价为:'.$cars->minprice.' 至 '.$cars->maxprice.'元';
-            }
+            return '为了确保公众号能够正常运行，请您确保输入间隔5秒以上，谢谢您的支持与理解';
         }
-
-        return $pricereply;
     }
 
-    public function EventProc($Event)
+    public function EventProc($message)
     {
         $ResultArray = array("AveragePrice" => '',"City"=> '', "Community"=>'', "state" => 'false');
 
-        if ($Event == 'subscribe')
+        if ($message['Event'] == 'subscribe')
         {
             $ResultArray['AveragePrice'] = '您好，感谢您的关注！独行侠长期关注股票，基金，楼市等各类财经热点，关注独行侠，让投资理财变的如此简单。
-想知道你家现在的房价吗？最近有买房卖房的打算吗？后台回复城市名 小区名，如：南京 白云园，赶紧试一下吧！
-商务合作交流请加个人微信：yxp19891026';
+            想知道你家现在的房价吗？最近有买房卖房的打算吗？后台回复城市名 小区名，如：南京 白云园，赶紧试一下吧！
+            商务合作交流请加个人微信：yxp19891026';
             $ResultArray['state'] = 'true';
             //file_put_contents(__DIR__.'/db.txt', json_encode($data));
         }
-        else
+
+        elseif ($message['Event'] == 'unsubscribe')
         {
-            $ResultArray['AveragePrice'] = '对不起，暂未查询到';
-            $ResultArray['state'] = 'false';
+            $OfficialAccountUser = UserLimit::where('OpenID', $message['FromUserName'])->first();
+
+            if ($OfficialAccountUser)
+            {
+                // 插入数据 返回插入数据的bool值
+                 $update_bool = UserLimit::where('OpenID', $message['FromUserName'])->update(['olduser'=>1,'LastMsgType'=>$message['MsgType'], 'UpdateTime'=>$message['CreateTime']]);
+            }
         }
 
         return $ResultArray['AveragePrice'];
