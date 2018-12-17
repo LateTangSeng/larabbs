@@ -31,4 +31,4 @@ Route::get('permission-denied', 'PagesController@permissionDenied')->name('permi
 
 Route::any('/weixinofficial', 'WeixinOfficialController@show');
 
-//Route::post('carprice', 'CarPriceController@CarPrice');
+//Route::post('AutoCar', 'AutoCarController@AutoCar')->name('AutoCar.AutoCar');

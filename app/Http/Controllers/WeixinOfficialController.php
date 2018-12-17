@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Models\Cars;
 use App\Models\UserLimit;
+use App\Models\House;
 use EasyWeChat\Factory;
 use EasyWeChat\Kernel\Messages\Image;
 use EasyWeChat\Kernel\Messages\News;
@@ -302,7 +303,14 @@ class WeixinOfficialController extends Controller
         }
         else
         {
-            return $this->CarPrice($message);
+            if ($this->CheckProvice($message['Content']))
+            {
+                return '抱歉，您的输入有误，请不要输入省份，请直接输入城市+小区，确保城市名和小区名之间有 "+-/_," 中间的任一一种英文符号(请不要使用中文符号)；或者在中间添加空格，感谢您的理解和支持';
+            }
+            else
+            {
+                return $this->CarPrice($message);
+            }
         }
     }
 
@@ -315,6 +323,8 @@ class WeixinOfficialController extends Controller
             $CharArray = "+- ,/_";
             $CharIndex = 0;
             $IsFind = false;
+            $community = '';
+            $city = '';
 
             for ($i=0; $i < 6; $i++)
             {
@@ -346,54 +356,84 @@ class WeixinOfficialController extends Controller
             {
                 return  $AveragePrice ;
             }
+
             else
             {
-                //目标网站
-                $pageorigin = "https://city.anjuke.com/community/?kw=communityname&from=sugg_hot";
+                $HouseCount = House::where('KeyWord', $city.' '.$community)->count();
 
-                $pagecity = str_replace('city', $citypinyin, $pageorigin);
-                $page = str_replace('communityname', $community, $pagecity);
-
-                $ch = curl_init();
-                curl_setopt($ch, CURLOPT_URL, $page);
-                curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-                curl_setopt($ch, CURLOPT_AUTOREFERER, true);
-                curl_setopt($ch, CURLOPT_REFERER, $page);
-                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-                $result = curl_exec($ch);
-                curl_close($ch);
-                //return $result;
-
-                //$datatemp = $htmlcontent->getHtml();
-
-                $data = str_before(str_after($result, '<strong>'), '</strong>');
-                $actualcommunity = str_before(str_after(str_after($result, '<!--小区列表start-->'), 'alt="'), '"');
-
-                $housecount = str_before(str_after(str_after($result, 'bot-tag'), '>('), ')</a>');
-
-                $buildyear = trim('竣工日期'.str_before(str_after($result, '竣工日期'), '<!-- '));
-
-                $houseaddressori = trim(str_before(str_after($result, '<address>'), '</address>'));
-                $houseaddress = '';
-
-                if (false == strpos($houseaddressori, '-'))
+                if ($HouseCount !=0)
                 {
-                    $houseaddress = $houseaddressori;
+                    $HousePrice = House::where(['KeyWord'=>$city.' '.$community, 'MatchIndex'=>1])->first();
+                    $FirstTime = strtotime(date("y-m-d h:i:s", time()));
+                    $LastTime = strtotime(date("y-m-d h:i:s", $HousePrice->UTUnix));
+                    $UpdateIntval=ceil(($LastTime-$FirstTime)/86400);
+
+                    if (1 == $HouseCount)
+                    {
+
+                        if ($UpdateIntval > 3)
+                        {
+                            $AveragePrice = $this->HousePrice($city, $citypinyin, $community);
+                        }
+                        else
+                        {
+                            $AveragePrice = '为您查询到：
+
+'.$HousePrice->City.' '.$HousePrice->Community.'; 地理位置:'.$HousePrice->Location.'； 当前均价为：'.$HousePrice->Price.' 元/平方米；现有房源：'.$HousePrice->HouseCount.' 套；'.$HousePrice->BuildYear.'
+
+数据更新日期:'.date('Y年m月d日', $HousePrice->UTUnix);
+
+                            // $AveragePrice = '查询';
+
+                        $Update_Bool = House::where(['KeyWord'=>$city.' '.$community, 'MatchIndex'=>1])->update(['SelectCount'=>($HousePrice->SelectCount + 1)]);
+
+                        }
+                    }
+                    else
+                    {
+                        if ($UpdateIntval > 3)
+                        {
+                            $AveragePrice = $this->HousePrice($city, $citypinyin, $community);
+                        }
+                        else
+                        {
+                            $ReturnHead = '为您查询到：
+
+';
+                            $ReturnBody = '';
+
+                            if ($HouseCount == 5)
+                            {
+                                $ReturnHead = '查询结果过多，为您列出最佳匹配的前5项:
+
+';
+                            }
+
+                            $HousePriceArray = House::where('KeyWord', $city.' '.$community)->get();
+
+                            for ($i=0; $i < ($HouseCount - 1); $i++)
+                            {
+                                $ReturnBody = $ReturnBody.$HousePriceArray[$i]->City.' '.$HousePriceArray[$i]->Community.'; 地理位置:'.$HousePriceArray[$i]->Location.'； 当前均价为：'.$HousePriceArray[$i]->Price.' 元/平方米；现有房源：'.$HousePriceArray[$i]->HouseCount.' 套；'.$HousePriceArray[$i]->BuildYear.'
+
+';
+                                $Update_Bool = House::where(['KeyWord'=>$city.' '.$community, 'MatchIndex'=>($i + 1)])->update(['SelectCount'=>($HousePriceArray[$i]->SelectCount + 1)]);
+                            }
+
+                            $ReturnBody = $ReturnBody.$HousePriceArray[($HouseCount - 1)]->City.' '.$HousePriceArray[($HouseCount - 1)]->Community.'; 地理位置:'.$HousePriceArray[($HouseCount - 1)]->Location.'； 当前均价为：'.$HousePriceArray[($HouseCount - 1)]->Price.' 元/平方米；现有房源：'.$HousePriceArray[($HouseCount - 1)]->HouseCount.' 套；'.$HousePriceArray[($HouseCount - 1)]->BuildYear.'
+
+数据更新日期:'.date('Y年m月d日', $HousePriceArray[0]->UTUnix);
+
+                            $Update_Bool = House::where(['KeyWord'=>$city.' '.$community, 'MatchIndex'=>$HouseCount])->update(['SelectCount'=>($HousePriceArray[($HouseCount - 1)]->SelectCount + 1)]);
+
+                            $AveragePrice = $ReturnHead.$ReturnBody;
+                        }
+                    }
                 }
                 else
                 {
-                    $houseaddress = str_before($houseaddressori, '-').'］'.str_after($houseaddressori, '］');
+                    $AveragePrice = $this->HousePrice($city, $citypinyin, $community);
                 }
 
-                if (strlen($data) < 10)
-                {
-                    $AveragePrice = $city.' '.$actualcommunity.'; 地理位置:'.$houseaddress.'； 当前均价为：'.$data.' 元/平方米；现有房源：'.$housecount.' 套；'.$buildyear;
-                    //file_put_contents(__DIR__.'/db.txt', json_encode($data));
-                }
-                else
-                {
-                    return $AveragePrice;
-                }
             }
 
             return $AveragePrice;
@@ -447,6 +487,143 @@ class WeixinOfficialController extends Controller
         }
     }
 
+    public function HousePrice($city, $citypinyin, $community)
+    {
+        //目标网站
+        $pageorigin = "https://city.anjuke.com/community/?kw=communityname&from=sugg_hot";
+        $AveragePrice = '';
+
+        $pagecity = str_replace('city', $citypinyin, $pageorigin);
+        $page = str_replace('communityname', $community, $pagecity);
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $page);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+        curl_setopt($ch, CURLOPT_AUTOREFERER, true);
+        curl_setopt($ch, CURLOPT_REFERER, $page);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        $result = curl_exec($ch);
+        curl_close($ch);
+
+        $ResultCount = str_before(str_after($result, '</em> 小区 <em>'), '</em> 个</span>');
+
+        switch ($ResultCount)
+        {
+            case '0':
+
+                $AveragePrice = '抱歉，后台数据库升级中，暂时没有您所查询的小区信息，请尝试其他输入';
+                //return $AveragePrice;
+                break;
+
+            case '1':
+
+                $data = str_before(str_after($result, '<strong>'), '</strong>');
+                $actualcommunity = str_before(str_after(str_after($result, '<!--小区列表start-->'), 'alt="'), '"');
+
+                $housecount = str_before(str_after(str_after($result, 'bot-tag'), '>('), ')</a>');
+
+                $buildyear = trim('竣工日期'.str_before(str_after($result, '竣工日期'), '<!-- '));
+
+                $houseaddressori = trim(str_before(str_after($result, '<address>'), '</address>'));
+                $houseaddress = '';
+
+                if (false == strpos($houseaddressori, '-'))
+                {
+                    $houseaddress = $houseaddressori;
+                }
+                else
+                {
+                    $houseaddress = str_before($houseaddressori, '-').'］'.str_after($houseaddressori, '］');
+                }
+
+                $AveragePrice = '为您查询到：
+
+'.$city.' '.$actualcommunity.'; 地理位置:'.$houseaddress.'； 当前均价为：'.$data.' 元/平方米；现有房源：'.$housecount.' 套；'.$buildyear.'
+
+数据更新日期：'.date('Y年m月d日',time());
+
+                $HousePrice = House::where(['KeyWord'=>$city.' '.$community, 'MatchIndex'=>1])->first();
+                if (!$HousePrice)
+                {
+                    $Insert_Bool = House::insert(['City'=>$city, 'Community'=>$actualcommunity, 'Location'=>$houseaddress, 'Price'=>$data, 'HouseCount'=>$housecount, 'BuildYear'=>$buildyear, 'KeyWord'=>($city.' '.$community), 'MatchIndex'=>1, 'CreateTime'=>now(), 'CTUnix'=>time(), 'UpdateTime'=>now(), 'UTUnix'=>time(), 'SelectCount'=>1]);
+                }
+                else
+                {
+                    $Update_Bool = House::where(['KeyWord'=>$city.' '.$community, 'MatchIndex'=>1])->update(['Community'=>$actualcommunity, 'Location'=>$houseaddress, 'Price'=>$data, 'HouseCount'=>$housecount, 'BuildYear'=>$buildyear, 'UpdateTime'=>now(), 'UTUnix'=>time(), 'SelectCount'=>($HousePrice->SelectCount + 1)]);
+                }
+                break;
+
+            default:
+                $StringTemp = $result;
+                $ReturnCount = (int)$ResultCount;
+                $ReturnHead = '为您查询到：
+
+';
+                $ReturnBody = '';
+
+                if ((int)$ResultCount > 5)
+                {
+                    $ReturnCount = 5;
+                    $ReturnHead = '查询结果过多，为您列出最佳匹配的前5项:
+
+';
+                }
+
+                for ($i=0; $i <$ReturnCount ; $i++)
+                {
+                    $PartResult = str_before(str_after($StringTemp, 'li-info'), '<!-- 默认向上箭头，price-down向下箭头，price-no没有价格 -->');
+
+                    $actualcommunity = str_before(str_after($PartResult, 'target="_blank">'), '</a>');
+
+                    $houseaddressori = trim(str_before(str_after($PartResult, '<address>'), '</address>'));
+                    $houseaddress = '';
+                    if (false == strpos($houseaddressori, '-'))
+                    {
+                        $houseaddress = $houseaddressori;
+                    }
+                    else
+                    {
+                        $houseaddress = str_before($houseaddressori, '-').'］'.str_after($houseaddressori, '］');
+                    }
+
+                    $data = str_before(str_after($PartResult, '<strong>'), '</strong>');
+
+                    $housecount = str_before(str_after(str_after($PartResult, 'bot-tag'), '>('), ')</a>');
+
+                    $buildyear = trim('竣工日期'.str_before(str_after($PartResult, '竣工日期'), '<!-- '));
+
+                    $StringTemp = str_after($StringTemp, '<!-- 默认向上箭头，price-down向下箭头，price-no没有价格 -->');
+
+                    if (($ReturnCount - 1) == $i) {
+                        $ReturnBody = $ReturnBody.$city.' '.$actualcommunity.'; 地理位置:'.$houseaddress.'； 当前均价为：'.$data.' 元/平方米；现有房源：'.$housecount.' 套；'.$buildyear.'
+
+数据更新日期：'.date('Y年m月d日',time());
+                    }
+                    else
+                    {
+                        $ReturnBody = $ReturnBody.$city.' '.$actualcommunity.'; 地理位置:'.$houseaddress.'； 当前均价为：'.$data.' 元/平方米；现有房源：'.$housecount.' 套；'.$buildyear.'
+
+';
+                    }
+
+                    $HousePrice = House::where(['KeyWord'=>$city.' '.$community, 'MatchIndex'=>($i + 1)])->first();
+                    if (!$HousePrice)
+                    {
+                        $Insert_Bool = House::insert(['City'=>$city, 'Community'=>$actualcommunity, 'Location'=>$houseaddress, 'Price'=>$data, 'HouseCount'=>$housecount, 'BuildYear'=>$buildyear, 'KeyWord'=>($city.' '.$community), 'MatchIndex'=>($i + 1), 'CreateTime'=>now(), 'CTUnix'=>time(), 'UpdateTime'=>now(), 'UTUnix'=>time(), 'SelectCount'=>1]);
+                    }
+                    else
+                    {
+                        $Update_Bool = House::where(['KeyWord'=>$city.' '.$community, 'MatchIndex'=>($i + 1)])->update(['Community'=>$actualcommunity, 'Location'=>$houseaddress, 'Price'=>$data, 'HouseCount'=>$housecount, 'BuildYear'=>$buildyear, 'UpdateTime'=>now(), 'UTUnix'=>time(), 'SelectCount'=>($HousePrice->SelectCount + 1)]);
+                    }
+                }
+
+                $AveragePrice = $ReturnHead.$ReturnBody;
+                break;
+        }
+
+        return $AveragePrice;
+    }
+
     public function EventProc($message)
     {
         $ResultArray = array("AveragePrice" => '',"City"=> '', "Community"=>'', "state" => 'false');
@@ -454,8 +631,10 @@ class WeixinOfficialController extends Controller
         if ($message['Event'] == 'subscribe')
         {
             $ResultArray['AveragePrice'] = '您好，感谢您的关注！独行侠长期关注股票，基金，楼市等各类财经热点，关注独行侠，让投资理财变的如此简单。
-            想知道你家现在的房价吗？最近有买房卖房的打算吗？后台回复城市名 小区名，如：南京 白云园，赶紧试一下吧！
-            商务合作交流请加个人微信：yxp19891026';
+
+想知道你家现在的房价吗？最近有买房卖房的打算吗？后台回复城市名 小区名，如：南京 白云园，赶紧试一下吧！
+
+商务合作交流请加个人微信：yxp19891026';
             $ResultArray['state'] = 'true';
             //file_put_contents(__DIR__.'/db.txt', json_encode($data));
         }
@@ -490,6 +669,24 @@ class WeixinOfficialController extends Controller
         if (false == strpos($CitySet, $CityName))
         {
             $result = false;
+        }
+        return $result;
+    }
+
+    public function CheckProvice($City)
+    {
+        $result = false;
+        $ProviceSet = '    山东;江苏;浙江;安徽;福建;江西;广东;广西;海南;河南;湖南;湖北;河北;山西;内蒙古;宁夏;青海;陕西;甘肃;新疆;四川;贵州;云南;西藏;辽宁;吉林;黑龙江;台湾';
+
+        if (strlen($City) > 6)
+        {
+            $City = substr($City,0,6);
+            //$CityName = iconv("UTF-8","gb2312//IGNORE",$CityName);
+        }
+
+        if (false != strpos($ProviceSet, $City))
+        {
+            $result = true;
         }
         return $result;
     }

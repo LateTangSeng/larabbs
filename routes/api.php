@@ -93,5 +93,9 @@ $api->version('v1', [
         // 查询车价测试
         $api->post('weapp/carprice', 'CarPriceController@CarPrice')
             ->name('api.weapp.carprice.carprice');
+
+        // 抓取车价
+        $api->post('weapp/autocar', 'WeappAutoCarController@AutoCar')
+            ->name('api.weapp.autocar.autocar');
     });
 });
