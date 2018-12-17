@@ -363,14 +363,70 @@ class WeixinOfficialController extends Controller
 
                 if ($HouseCount !=0)
                 {
+                    $HousePrice = House::where(['KeyWord'=>$city.' '.$community, 'MatchIndex'=>1])->first();
+                    $FirstTime = strtotime(date("y-m-d h:i:s", time()));
+                    $LastTime = strtotime(date("y-m-d h:i:s", $HousePrice->UTUnix));
+                    $UpdateIntval=ceil(($LastTime-$FirstTime)/86400);
+
                     if (1 == $HouseCount)
                     {
-                        $HousePrice = House::where('KeyWord', $city.' '.$community)->first();
-                        $AveragePrice = '为您查询到：
+
+                        if ($UpdateIntval > 3)
+                        {
+                            $AveragePrice = $this->HousePrice($city, $citypinyin, $community);
+                        }
+                        else
+                        {
+                            $AveragePrice = '为您查询到：
 
 '.$HousePrice->City.' '.$HousePrice->Community.'; 地理位置:'.$HousePrice->Location.'； 当前均价为：'.$HousePrice->Price.' 元/平方米；现有房源：'.$HousePrice->HouseCount.' 套；'.$HousePrice->BuildYear.'
 
-数据更新日期:'.$HousePrice->UpdateTime;
+数据更新日期:'.date('Y年m月d日', $HousePrice->UTUnix);
+
+                            // $AveragePrice = '查询';
+
+                        $Update_Bool = House::where(['KeyWord'=>$city.' '.$community, 'MatchIndex'=>1])->update(['SelectCount'=>($HousePrice->SelectCount + 1)]);
+
+                        }
+                    }
+                    else
+                    {
+                        if ($UpdateIntval > 3)
+                        {
+                            $AveragePrice = $this->HousePrice($city, $citypinyin, $community);
+                        }
+                        else
+                        {
+                            $ReturnHead = '为您查询到：
+
+';
+                            $ReturnBody = '';
+
+                            if ($HouseCount == 5)
+                            {
+                                $ReturnHead = '查询结果过多，为您列出最佳匹配的前5项:
+
+';
+                            }
+
+                            $HousePriceArray = House::where('KeyWord', $city.' '.$community)->get();
+
+                            for ($i=0; $i < ($HouseCount - 1); $i++)
+                            {
+                                $ReturnBody = $ReturnBody.$HousePriceArray[$i]->City.' '.$HousePriceArray[$i]->Community.'; 地理位置:'.$HousePriceArray[$i]->Location.'； 当前均价为：'.$HousePriceArray[$i]->Price.' 元/平方米；现有房源：'.$HousePriceArray[$i]->HouseCount.' 套；'.$HousePriceArray[$i]->BuildYear.'
+
+';
+                                $Update_Bool = House::where(['KeyWord'=>$city.' '.$community, 'MatchIndex'=>($i + 1)])->update(['SelectCount'=>($HousePriceArray[$i]->SelectCount + 1)]);
+                            }
+
+                            $ReturnBody = $ReturnBody.$HousePriceArray[($HouseCount - 1)]->City.' '.$HousePriceArray[($HouseCount - 1)]->Community.'; 地理位置:'.$HousePriceArray[($HouseCount - 1)]->Location.'； 当前均价为：'.$HousePriceArray[($HouseCount - 1)]->Price.' 元/平方米；现有房源：'.$HousePriceArray[($HouseCount - 1)]->HouseCount.' 套；'.$HousePriceArray[($HouseCount - 1)]->BuildYear.'
+
+数据更新日期:'.date('Y年m月d日', $HousePriceArray[0]->UTUnix);
+
+                            $Update_Bool = House::where(['KeyWord'=>$city.' '.$community, 'MatchIndex'=>$HouseCount])->update(['SelectCount'=>($HousePriceArray[($HouseCount - 1)]->SelectCount + 1)]);
+
+                            $AveragePrice = $ReturnHead.$ReturnBody;
+                        }
                     }
                 }
                 else
@@ -485,7 +541,16 @@ class WeixinOfficialController extends Controller
 '.$city.' '.$actualcommunity.'; 地理位置:'.$houseaddress.'； 当前均价为：'.$data.' 元/平方米；现有房源：'.$housecount.' 套；'.$buildyear.'
 
 数据更新日期：'.date('Y年m月d日',time());
-        //         //return $AveragePrice;
+
+                $HousePrice = House::where(['KeyWord'=>$city.' '.$community, 'MatchIndex'=>1])->first();
+                if (!$HousePrice)
+                {
+                    $Insert_Bool = House::insert(['City'=>$city, 'Community'=>$actualcommunity, 'Location'=>$houseaddress, 'Price'=>$data, 'HouseCount'=>$housecount, 'BuildYear'=>$buildyear, 'KeyWord'=>($city.' '.$community), 'MatchIndex'=>1, 'CreateTime'=>now(), 'CTUnix'=>time(), 'UpdateTime'=>now(), 'UTUnix'=>time(), 'SelectCount'=>1]);
+                }
+                else
+                {
+                    $Update_Bool = House::where(['KeyWord'=>$city.' '.$community, 'MatchIndex'=>1])->update(['Community'=>$actualcommunity, 'Location'=>$houseaddress, 'Price'=>$data, 'HouseCount'=>$housecount, 'BuildYear'=>$buildyear, 'UpdateTime'=>now(), 'UTUnix'=>time(), 'SelectCount'=>($HousePrice->SelectCount + 1)]);
+                }
                 break;
 
             default:
@@ -539,6 +604,16 @@ class WeixinOfficialController extends Controller
                         $ReturnBody = $ReturnBody.$city.' '.$actualcommunity.'; 地理位置:'.$houseaddress.'； 当前均价为：'.$data.' 元/平方米；现有房源：'.$housecount.' 套；'.$buildyear.'
 
 ';
+                    }
+
+                    $HousePrice = House::where(['KeyWord'=>$city.' '.$community, 'MatchIndex'=>($i + 1)])->first();
+                    if (!$HousePrice)
+                    {
+                        $Insert_Bool = House::insert(['City'=>$city, 'Community'=>$actualcommunity, 'Location'=>$houseaddress, 'Price'=>$data, 'HouseCount'=>$housecount, 'BuildYear'=>$buildyear, 'KeyWord'=>($city.' '.$community), 'MatchIndex'=>($i + 1), 'CreateTime'=>now(), 'CTUnix'=>time(), 'UpdateTime'=>now(), 'UTUnix'=>time(), 'SelectCount'=>1]);
+                    }
+                    else
+                    {
+                        $Update_Bool = House::where(['KeyWord'=>$city.' '.$community, 'MatchIndex'=>($i + 1)])->update(['Community'=>$actualcommunity, 'Location'=>$houseaddress, 'Price'=>$data, 'HouseCount'=>$housecount, 'BuildYear'=>$buildyear, 'UpdateTime'=>now(), 'UTUnix'=>time(), 'SelectCount'=>($HousePrice->SelectCount + 1)]);
                     }
                 }
 
@@ -601,7 +676,7 @@ class WeixinOfficialController extends Controller
     public function CheckProvice($City)
     {
         $result = false;
-        $ProviceSet = '山东;江苏;浙江;安徽;福建;江西;广东;广西;海南;河南;湖南;湖北;河北;山西;内蒙古;宁夏;青海;陕西;甘肃;新疆;四川;贵州;云南;西藏;辽宁;吉林;黑龙江;台湾';
+        $ProviceSet = '    山东;江苏;浙江;安徽;福建;江西;广东;广西;海南;河南;湖南;湖北;河北;山西;内蒙古;宁夏;青海;陕西;甘肃;新疆;四川;贵州;云南;西藏;辽宁;吉林;黑龙江;台湾';
 
         if (strlen($City) > 6)
         {

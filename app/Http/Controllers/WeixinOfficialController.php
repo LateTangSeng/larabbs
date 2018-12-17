@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Models\Cars;
 use App\Models\UserLimit;
+use App\Models\Auto;
 use App\Models\House;
 use EasyWeChat\Factory;
 use EasyWeChat\Kernel\Messages\Image;
@@ -448,36 +449,154 @@ class WeixinOfficialController extends Controller
     {
         if ($this->FreqLimit('车价', $message))
         {
-            $pricereply = '抱歉，后台数据库还在升级中，暂时没有您所查询的车系信息，请尝试其他车系。如不知道车系，可以先尝试输入车辆品牌，比如输入阿斯顿，可以获取阿斯顿·马丁旗下所有车系';
+            $pricereply = '';
 
-            $cars = Cars::where('name', $message['Content'])->first();
+            $CharArray = "+-,/_";
+            $CharIndex = 0;
+            $IsFind = false;
+            $FullRecords = false;
+            $FullRequest = '';
+            $CarSeries = '';
 
-            if (!$cars)
+            for ($i=0; $i < 5; $i++)
             {
-                $count = Cars::where('name', 'like','%'.$message['Content'].'%')->count();
-                if ($count != 0)
+                $CharTemp = substr($CharArray, $i, 1);
+                if (false != strpos($message['Content'], $CharTemp))
                 {
-                    $carbrand = Cars::where('name', 'like','%'.$message['Content'].'%')->get();
-                    $pricereply = '您所查询的品牌旗下所有车系为:';
-                    for($i = 0; $i < $count; $i++)
-                    {
-                        $pricereply = $pricereply.$carbrand[$i]->name.';';
-                    }
-
-                    $pricereply = $pricereply.' 您可以复制具体车系名称，输入至对话框查询该车系价格范围。';
+                    $CharIndex = $i;
+                    $IsFind = true;
+                    break;
                 }
-                return $pricereply;
+            }
+
+            if ($IsFind == true)
+            {
+                $CarSeries = str_before($message['Content'], substr($CharArray, $CharIndex, 1));
+                //$CarSeries = $CarSeries;
+                $FullRequest = str_after($message['Content'], substr($CharArray, $CharIndex, 1));
+                //$FullRequest = $FullRequest;
+                if ('完整版' == $FullRequest)
+                {
+                    $FullRecords = true;
+                }
             }
             else
             {
-                if (0 == $cars->minprice) {
-                    return '抱歉，您所查询的车系暂时没有报价，请尝试其他车系。';
+                $CarSeries = $message['Content'];
+                $FullRecords = false;
+            }
+
+            $AutoRecordCount = Auto::where('KeyWord', $CarSeries)->count();
+
+            if (0 == $AutoRecordCount)
+            {
+                $cars = Cars::where('name', $CarSeries)->first();
+
+                if (!$cars)
+                {
+                    $count = Cars::where('name', 'like','%'.$CarSeries.'%')->count();
+                    if ($count != 0)
+                    {
+                        $carbrand = Cars::where('name', 'like','%'.$CarSeries.'%')->get();
+                        $pricereply = '您所查询的品牌旗下所有车系为:';
+                        for($i = 0; $i < $count; $i++)
+                        {
+                            $pricereply = $pricereply.$carbrand[$i]->name.';';
+                        }
+
+                        $pricereply = $pricereply.' 您可以复制具体车系名称，输入至对话框查询该车系价格范围。';
+                    }
+                    return $pricereply;
                 }
                 else
                 {
-                    $pricereply = $message['Content'].' 厂家指导价为:'.$cars->minprice.' 至 '.$cars->maxprice.'元';
+                    if (0 == $cars->minprice)
+                    {
+                        return '抱歉，您所查询的车系暂时没有报价，请尝试其他车系。';
+                    }
+                    else
+                    {
+                        $pricereply = $CarSeries.' 厂家指导价为:'.$cars->minprice.' 至 '.$cars->maxprice.'元';
+                    }
                 }
             }
+
+            if ($AutoRecordCount <= 5)
+            {
+                $AutoRecords = Auto::where('KeyWord', $CarSeries)->get();
+                $FirstAutoRecord = Auto::where(['KeyWord'=>$CarSeries, 'MatchIndex'=>1])->first();
+
+                $pricereply = '为您查询到 '.$CarSeries.' 具体信息：'.'
+
+';
+                for ($i=0; $i < $AutoRecordCount; $i++)
+                {
+                    $pricereply = $pricereply.'【'.$AutoRecords[$i]->Name.'； 配置: '.$AutoRecords[$i]->Feature.'； 价格: '.$AutoRecords[$i]->Price.'】
+
+';
+                }
+
+                $pricereply = $pricereply.'更新日期：'.date('Y年m月d日',time());
+
+                $update_bool_car = Auto::where(['KeyWord'=>$CarSeries, 'MatchIndex'=>1])->update(['SelectCount'=>($FirstAutoRecord->SelectCount + 1)]);
+            }
+            else
+            {
+                $SelectCount = 5;
+                if ($FullRecords)
+                {
+                    if ($AutoRecordCount >= 10)
+                    {
+                        $SelectCount = 10;
+                        $pricereply = '因公众号回复字数限制，为您显示 '.$CarSeries.' 前十条信息：'.'
+
+';
+                    }
+                    else
+                    {
+                        $SelectCount = $AutoRecordCount;
+                        $pricereply = '为您显示 '.$CarSeries.' 完整信息：'.'
+
+';
+                    }
+
+                }
+                else
+                {
+                    $pricereply = '此车型查询结果过多，为您显示 '.$CarSeries.' 前五条信息：'.'
+
+';
+                }
+
+                $AutoRecords = Auto::where('KeyWord', $CarSeries)->get();
+                $FirstAutoRecord = Auto::where(['KeyWord'=>$CarSeries, 'MatchIndex'=>1])->first();
+
+
+                for ($i=0; $i < $SelectCount; $i++)
+                {
+                    $pricereply = $pricereply.'【'.$AutoRecords[$i]->Name.'； 配置: '.$AutoRecords[$i]->Feature.'； 价格: '.$AutoRecords[$i]->Price.'】
+
+';
+                }
+
+                if ($FullRecords)
+                {
+                    $pricereply = $pricereply.'更新日期：'.date('Y年m月d日',time());
+                }
+                else
+                {
+                    $pricereply = $pricereply.'更新日期：'.date('Y年m月d日',time()).'
+
+若您需要显示全部结果，请在车型后输入 "+-/_," 中间的任一一种英文符号，再加上中文 "完整版" ，例如：
+
+奥迪A4L+完整版
+
+即可获取该车型全部信息，感谢您的理解和支持';
+                }
+
+                $update_bool_car = Auto::where(['KeyWord'=>$CarSeries, 'MatchIndex'=>1])->update(['SelectCount'=>($FirstAutoRecord->SelectCount + 1)]);
+            }
+
 
             return $pricereply;
         }
